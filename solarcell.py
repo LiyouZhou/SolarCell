@@ -1,8 +1,9 @@
+from matplotlib.pylab import np
+from scipy import optimize
 from math import exp, log
-import numpy as np
 import time
 import sys
-import scipy.optimize
+
 
 k = 1.3806488 * 10 ** -23 # boltsmann constant
 q = 1.602176565 * 10 ** -19 # electron charge
@@ -39,12 +40,12 @@ class solarcell(object):
     def current(self, V, T, I_L):
         self.I_L = I_L
         global k,q
-        try: I = scipy.optimize.newton(self.f, -0.1, fprime=self.df)
+        try: I = optimize.newton(self.f, -0.1, fprime=self.df)
         except RuntimeError: I = 0
         return I
 
     def calibrate(self, data):
-        scipy.optimize.curve_fit(f, xdata, ydata, p0=None, sigma=None, **kw)
+        optimize.curve_fit(f, xdata, ydata, p0=None, sigma=None, **kw)
 
 
 class diode(object):
