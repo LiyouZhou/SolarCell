@@ -35,41 +35,10 @@ class solarcell(object):
         global k,q
         self.T = T
 
-
-
-        def secant(x0,x1,n):
-            for i in range(n):
-                if f(x1) - f(x0) == 0:
-                    return x1
-                x_temp = x1 - (f(x1)*(x1-x0)*1.0)/(f(x1)-f(x0))
-                x0 = x1
-                x1 = x_temp
-            return x1
-
-        def newton(x0):
-            while( abs(f(x0)) > 0.000000001 ):
-                #print x0, "," , f(x0), "," ,df(x0),"," ,
-                x0 = x0 - f(x0)/df(x0)
-                #print x0
-            #print "break"
-            return x0
-
-
-        # I = secant(0.1,0.2,100)
         try:
             I = scipy.optimize.newton(f, -0.1, fprime=df)
         except RuntimeError:
             I = 0
-
-        #x_int = f(y_int)
-        #x_li = []
-        #y_li = []
-        #for i in np.arange(-10,10,0.01):
-        #    y_li.append(i)
-        #    x_li.append(f(i))
-
-
-        # return x_li, y_li, x_int, y_int
 
         return I
 
@@ -101,8 +70,6 @@ if __name__ == '__main__':
     plt.grid('on',which='both')
     plt.xlabel('voltage/V')
     plt.ylabel('current/A')
-
-#    plt.plot(V_li, I_li)
     plt.show()
 
     for T in range(300,310,10):
@@ -110,20 +77,11 @@ if __name__ == '__main__':
         V_li = []
         for V in np.arange(0.01,0.7,0.01):
             I = -d.current(V,T,0)
-
-            #plt.plot(V, I, 'ro')
-            #plt.draw()
-            #time.sleep(0.01)
-            print V
             sys.stdout.flush()
             I_li.append(I)
             V_li.append(V)
-
-            #print I_li
     plt.plot(V_li, I_li, hold = True )
-
     plt.gca().set_yscale('log')
-
 
     while(1):
         plt.draw()
