@@ -1,8 +1,6 @@
 from matplotlib.pylab import np
 from scipy import optimize
 from math import exp, log
-import time
-import sys
 
 
 k = 1.3806488 * 10 ** -23 # boltsmann constant
@@ -38,12 +36,11 @@ class SolarCell(object):
         self.I_L = 0;
 
     def set_param(self, name, value):
+        setattr(self, name, value)
+        attr = getattr( self, name )
         if "I0" or "n" in name:
             self.D1 = Diode( self.n1, self.I01 )
             self.D2 = Diode( self.n2, self.I02 )
-        setattr(self, name, value)
-        attr = getattr( self, name )
-
         print "setting %s to %e: %e"%(name, value, attr)
 
     def f(self, I):
@@ -70,24 +67,26 @@ class SolarCell(object):
         return float(I)
 
     def calibrate(self, xdata, ydata):
-        def objective_function( V, I01): #Rs, Rsh, n2, I01, I02):
-            #if I01 < 10**-14: I01=1
-            #print type(Rs)
-            #self.set_param( "Rs" , Rs  )
-            #self.set_param( "Rsh", Rsh )
-            #self.set_param( "n2" , n2  )
-            self.set_param( "I01", I01 )
-            #self.set_param( "I02", I02 )
-            I=[]
-            for v in V:
-                I.append(-self.current(v, self.T, 0))
-            return np.array(I)
+        pass
 
-        def residule(I01):
-            print "x=",I01
-            I01=10**I01
-            #I01 = I01/(10**13)
-            retval = sum((np.array(ydata) - objective_function(xdata,I01))**2)
-            #if retval < 1: retval=log(retval)
-            print "retval", log(retval)
-            return log(retval)
+    def objective_function(self, V, I01, I02 ): #Rs, Rsh, n2, I01, I02):
+        #if I01 < 10**-14: I01=1
+        #print type(Rs)
+        #self.set_param( "Rs" , Rs  )
+        #self.set_param( "Rsh", Rsh )
+        #self.set_param( "n2" , n2  )
+        self.set_param( "I01", I01 )
+        self.set_param( "I02", I02 )
+        I=[]
+        for v in V:
+            I.append(-self.current(v, self.T, 0))
+        return np.array(I)
+
+    def residule(self, x,xdata,ydata):
+        print "-"*10,"\n","x=",x
+
+        I01=10**-x[0]
+        I02=10**-x[1]
+        name_of_retval = sum((np.array(ydata)-self.objective_function(xdata,I01,I02))**2)
+        print "retval", name_of_retval, type(name_of_retval)
+        return name_of_retval
