@@ -11,11 +11,10 @@ class Diode(object):
     def __init__(self, n, I_s ):
         # implementation of ideal diode equation
         self.n = n # ideality factor
-        self.I_s = I_s # saturation current Amps
+        self.I_s = I_s # reverse saturation current Amps
 
     def current( self, V_D, T ):
-        global k
-        global q
+        global k, q
         V_T = k * T / q # thermal voltage
         I = self.I_s * ( exp( V_D/( self.n*V_T ) ) - 1 ) # ideal diode equation
         return I
@@ -43,28 +42,52 @@ class SolarCell(object):
             self.D2 = Diode( self.n2, self.I02 )
         print "setting %s to %e: %e"%(name, value, attr)
 
-    def f(self, I):
-        V_D = self.__V - I * self.Rs
+    def f(self, V, I): # equation for double diode model
+        V_D = V + I * self.Rs
         y = self.I_L - self.D1.current(V_D,self.T) - \
-                  self.D2.current(V_D,self.T) - \
-                  V_D/self.Rsh - I
+                       self.D2.current(V_D,self.T) - \
+            V_D/self.Rsh - I
         return y
 
-    def df(self, I):
-        V_D = self.__V - I * self.Rs
+    def df_dI(self, V, I):
+        V_D = V + I * self.Rs
         y = -((q*self.Rs)/(k*self.T)) * ( self.D1.current(V_D,self.T) +
-                                          self.D2.current(V_D,self.T) ) \
+                                          self.D2.current(V_D,self.T) + \
+                                          self.D1.I_s + self.D2.I_s ) \
             - self.Rs/self.Rsh - 1
         return y
 
+    def df_dV(self, V, I):
+        V_D = V + I * self.Rs
+        y = -(q/(k*self.T)) * ( self.D1.current(V_D,self.T) +
+                                self.D2.current(V_D,self.T) +
+                                self.D1.I_s + self.D2.I_s ) \
+            - 1/self.Rsh
+        return y
+
     def current(self, V, T, I_L):
-        self.__V = V
+        def  obj_fun( I ): return  self.f(V,I)
+        def dobj_fun( I ): return  self.df_dI(V,I)
         self.T = T
         self.I_L = I_L
-        global k,q
-        try: I = optimize.newton(self.f, -0.1, fprime=self.df)
-        except RuntimeError: I = float(1)
+        try: I = optimize.newton( obj_fun, -0.1, fprime=dobj_fun )
+        except RuntimeError as e:
+            I = float(-1)
+            print e
         return float(I)
+
+    def voltage(self, I, T, I_L):
+        def  obj_fun( V ): return self.f(V,I)
+        def dobj_fun( V ): return self.df_dV(V,I)
+        global k,q
+        self.T = T
+        self.I_L = I_L
+
+        try: V = optimize.newton( obj_fun, 0.8, fprime=dobj_fun )
+        except RuntimeError as e:
+            V = float(-1000)
+            print e
+        return float(V)
 
     def calibrate(self, xdata, ydata):
         pass
@@ -87,6 +110,5 @@ class SolarCell(object):
 
         I01=10**-x[0]
         I02=10**-x[1]
-        name_of_retval = sum((np.array(ydata)-self.objective_function(xdata,I01,I02))**2)
-        print "retval", name_of_retval, type(name_of_retval)
-        return name_of_retval
+        retval = sum((np.array(ydata)-self.objective_function(xdata,I01,I02))**2)
+        return retval
