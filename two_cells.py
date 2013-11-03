@@ -5,12 +5,8 @@ from scipy import optimize
 import time
 
 
-c1 = SolarCell()
-c2 = SolarCell()
-
-# consider by-pass diode
-#d1 = Diode()
-#d2 = Diode()
+c1 = SolarCell(bypass=1)
+c2 = SolarCell(bypass=1)
 
 def fplot(f, limits, transp = 0, args = None, style = '-', label = None):
     [low, high] = limits
@@ -48,91 +44,102 @@ def in_parallel( V, T1, T2, I_L1, I_L2 ):
     I2 = c2.current(V,T2,I_L2)
     return I1 + I2
 
-# plot the resultant curves
+
 def draw_axis():
     plt.grid(True)
     plt.axhline(0, linewidth=2, color='black')
     plt.axvline(0, linewidth=2, color='black')
 
-[T1, T2, I_L1, I_L2] = [300,300,0.1,0.05]
+if __name__ == '__main__':
+    # plot the resultant curves
+    [T1, T2, I_L1, I_L2] = [300,300,0.1,0.05]
 
-plt.subplot(221)
-plt.title('Serise')
-draw_axis()
-fplot(c1.current, [-0.8, 0.8], args=[T1,I_L1], label='Cell 1', style='b')
-fplot(c2.current, [-0.8, 0.8], args=[T2,I_L2], label='Cell 2', style='g')
+    plt.subplot(221)
+    plt.title('In Serise')
+    #draw_axis()
+    plt.xlabel('Voltage/V')
+    plt.ylabel('Current Density/A*m^-2')
+    plt.grid()
+    fplot(c1.current, [-0.8, 0.8], args=[T1,I_L1], label='Cell 1', style='b')
+    fplot(c2.current, [-0.8, 0.8], args=[T2,I_L2], label='Cell 2', style='g')
 
-plt.subplot(222)
-plt.title('Parallel')
-draw_axis()
-fplot(c1.current, [-0.8, 0.8], args=[T1,I_L1], label='Cell 1', style='b')
-fplot(c2.current, [-0.8, 0.8], args=[T2,I_L2], label='Cell 2', style='g')
+    plt.subplot(222)
+    plt.title('In Parallel')
+    #draw_axis()
+    plt.xlabel('Voltage/V')
+    plt.ylabel('Current Density/A*m^-2')
+    plt.grid()
+    fplot(c1.current, [-0.8, 0.8], args=[T1,I_L1], label='Cell 1', style='b')
+    fplot(c2.current, [-0.8, 0.8], args=[T2,I_L2], label='Cell 2', style='g')
 
-plt.subplot(223)
-plt.title('Power')
-draw_axis()
-mpp1 = find_mpp(c1, T1, I_L1)
-mpp2 = find_mpp(c2, T2, I_L2)
-plt.axhline(mpp1, linewidth=2, color='b', label = 'Cell 1 Max' )
-plt.axhline(mpp2, linewidth=2, color='g', label = 'Cell 2 Max')
-plt.axhline(mpp1 + mpp2, linewidth=2, color='r', label = 'Cell 1+2 Max')
+    plt.subplot(212)
+    plt.title('Output Power')
+    #draw_axis()
+    plt.xlabel('Voltage/V')
+    plt.ylabel('Power Density/W*m^-2')
+    plt.grid()
+    mpp1 = find_mpp(c1, T1, I_L1)
+    mpp2 = find_mpp(c2, T2, I_L2)
+    plt.axhline(mpp1, linewidth=2, color='b', label = 'Cell 1 Max' )
+    plt.axhline(mpp2, linewidth=2, color='g', label = 'Cell 2 Max')
+    plt.axhline(mpp1 + mpp2, linewidth=2, color='r', label = 'Cell 1+2 Max')
 
-VI_serise   = [[],[],[]]
-VI_parallel = [[],[],[]]
-for V in np.arange(0,1.6,0.05):
-    # for cells in serise
-    V1 = in_serise( V, T1, T2, I_L1, I_L2 )
-    V2 = V - V1
-    I = c1.current(V1,T1,I_L1)
-    VI_serise[0].append(V1)
-    VI_serise[1].append(V2)
-    VI_serise[2].append(I)
+    VI_serise   = [[],[],[]]
+    VI_parallel = [[],[],[]]
+    for V in np.arange(0,1.6,0.05):
+        # for cells in serise
+        V1 = in_serise( V, T1, T2, I_L1, I_L2 )
+        V2 = V - V1
+        I = c1.current(V1,T1,I_L1)
+        VI_serise[0].append(V1)
+        VI_serise[1].append(V2)
+        VI_serise[2].append(I)
 
-    # for cells in parallel
-    I = in_parallel( V, T1, T2, I_L1, I_L2 )
-    I1 = c1.current( V, T1, I_L1)
-    I2 = I - I1
-    VI_parallel[0].append(I1)
-    VI_parallel[1].append(I2)
-    VI_parallel[2].append(V)
+        # for cells in parallel
+        I = in_parallel( V, T1, T2, I_L1, I_L2 )
+        I1 = c1.current( V, T1, I_L1)
+        I2 = I - I1
+        VI_parallel[0].append(I1)
+        VI_parallel[1].append(I2)
+        VI_parallel[2].append(V)
 
-# output of serise arrangement
-V1 = VI_serise[0]
-V2 = VI_serise[1]
-V  = [a + b for a, b in zip(V1, V2)]
-I  = VI_serise[2]
-power = [a * b for a, b in zip(V, I)]
+    # output of serise arrangement
+    V1 = VI_serise[0]
+    V2 = VI_serise[1]
+    V  = [a + b for a, b in zip(V1, V2)]
+    I  = VI_serise[2]
+    power = [a * b for a, b in zip(V, I)]
 
-plt.subplot(221)
-plt.plot(V1,I,'c.')
-plt.plot(V2,I,'m.')
-plt.plot(V,I,'r', label='combined')
+    plt.subplot(221)
+    #plt.plot(V1,I,'c.')
+    #plt.plot(V2,I,'m.')
+    plt.plot(V,I,'r', label='Combined')
 
-plt.subplot(223)
-plt.plot(V, power, 'b')
+    plt.subplot(212)
+    plt.plot(V, power, 'black', label='Serise')
 
-# output power of parallel arrangement
-I1 = VI_parallel[0]
-I2 = VI_parallel[1]
-I  = [a + b for a, b in zip(I1, I2)]
-V  = VI_parallel[2]
-power = [a * b for a, b in zip(V, I)]
+    # output power of parallel arrangement
+    I1 = VI_parallel[0]
+    I2 = VI_parallel[1]
+    I  = [a + b for a, b in zip(I1, I2)]
+    V  = VI_parallel[2]
+    power = [a * b for a, b in zip(V, I)]
 
-plt.subplot(222)
-plt.plot(V,I1,'c.')
-plt.plot(V,I2,'m.')
-plt.plot(V,I,'r', label='combined')
+    plt.subplot(222)
+    #plt.plot(V,I1,'c.')
+    #plt.plot(V,I2,'m.')
+    plt.plot(V,I,'r', label='Combined')
 
-plt.subplot(223)
-plt.plot(V, power, 'yellow')
+    plt.subplot(212)
+    plt.plot(V, power, 'yellow', label='Parallel')
 
-plt.subplot(221)
-plt.axis([0,1.6,0,(I_L1+I_L2)*1.1])
-plt.legend(prop={'size':9})
-plt.subplot(222)
-plt.axis([0,1.6,0,(I_L1+I_L2)*1.1])
-plt.legend(prop={'size':9})
-plt.subplot(223)
-plt.axis([0,1.6,0,(mpp1+mpp2)*1.1])
-plt.legend(prop={'size':9})
-plt.show()
+    plt.subplot(221)
+    plt.axis([0,1.6,0,(I_L1+I_L2)*1.1])
+    plt.legend(prop={'size':9})
+    plt.subplot(222)
+    plt.axis([0,1.6,0,(I_L1+I_L2)*1.1])
+    plt.legend(prop={'size':9})
+    plt.subplot(212)
+    plt.axis([0,1.6,0,(mpp1+mpp2)*1.1])
+    plt.legend(prop={'size':9}, loc=2)
+    plt.show()
